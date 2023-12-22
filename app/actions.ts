@@ -2,17 +2,20 @@
 import { z } from "zod"
 import { createTodo, deleteTodo } from "@/lib/api/todos/mutations"
 import { revalidatePath } from "next/cache"
+import { action, authAction } from "@/lib/nsa/client"
+import { db } from "@/lib/db"
+import { todos } from "@/lib/db/schema/todos"
+
+const createTodoSchema = z.object({
+  todo: z.string().min(2),
+})
 
 export async function createTodoAction(prevState: any, formData: FormData) {
   const rawFormData = {
     todo: formData.get("todo"),
   }
 
-  const schema = z.object({
-    todo: z.string().min(1),
-  })
-
-  const validatedData = schema.safeParse(rawFormData)
+  const validatedData = createTodoSchema.safeParse(rawFormData)
 
   if (!validatedData.success) {
     return {
@@ -22,13 +25,30 @@ export async function createTodoAction(prevState: any, formData: FormData) {
 
   try {
     await new Promise((resolve) => setTimeout(resolve, 2000))
-    await createTodo({ todo: validatedData.data.todo })
+    const [t] = await db.insert(todos).values(validatedData.data).returning()
     revalidatePath("/")
-    return { message: `Added todo: ${validatedData.data.todo}` }
+    return { message: `Added todo: ${JSON.stringify(t)}` }
   } catch (error) {
-    return { message: "Failed to create todo" }
+    if (error instanceof Error) return JSON.stringify(error)
   }
 }
+
+export const createTodoSafeAction = action(createTodoSchema, async (inputs) => {
+  await new Promise((resolve) => setTimeout(resolve, 2000))
+  const [t] = await db.insert(todos).values(inputs).returning()
+  revalidatePath("/")
+  return { message: `Added todo: ${JSON.stringify(t)}` }
+})
+
+export const createTodoAuthSafeAction = authAction(
+  createTodoSchema,
+  async (inputs, { userId }) => {
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+    const [t] = await db.insert(todos).values(inputs).returning()
+    revalidatePath("/")
+    return { message: `Added todo: ${JSON.stringify(t)}` }
+  }
+)
 
 export async function deleteTodoAction(prevState: any, formData: FormData) {
   const rawFormData = {
