@@ -1,0 +1,16 @@
+{
+  "hasSrc": false,
+  "packages": [
+    "shadcn-ui",
+    "drizzle"
+  ],
+  "preferredPackageManager": "npm",
+  "t3": false,
+  "alias": "@",
+  "rootPath": "",
+  "componentLib": "shadcn-ui",
+  "driver": "sqlite",
+  "provider": "better-sqlite3",
+  "orm": "drizzle",
+  "auth": null
+}
